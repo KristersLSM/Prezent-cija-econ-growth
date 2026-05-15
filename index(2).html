@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Temperature Shocks & Economic Growth — Dell, Jones, Olken (2012)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=JetBrains+Mono:wght@400;500;600&family=Inter+Tight:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-0:#0a0e14;
+    --ink:#e8e6e1;
+    --ink-dim:#a8a59e;
+    --ink-faint:#5e5b54;
+    --accent:#ff6b35;
+    --accent-2:#ffb449;
+    --accent-cool:#5fb5d6;
+    --accent-warm:#e85d4a;
+    --line:rgba(232,230,225,.10);
+    --glass:rgba(22,29,40,.55);
+    --serif:'Fraunces', 'Times New Roman', serif;
+    --sans:'Inter Tight', system-ui, sans-serif;
+    --mono:'JetBrains Mono', monospace;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
+  html,body{height:100%;overflow:hidden;background:var(--bg-0);color:var(--ink);font-family:var(--sans);}
+  body{
+    background:
+      radial-gradient(1200px 800px at 15% 10%, rgba(255,107,53,.08), transparent 60%),
+      radial-gradient(900px 700px at 85% 90%, rgba(95,181,214,.07), transparent 60%),
+      radial-gradient(700px 500px at 50% 50%, rgba(255,180,73,.04), transparent 70%),
+      var(--bg-0);
+  }
+  body::after{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:1000;opacity:.035;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+
+  /* === Deck === */
+  .deck{position:relative;width:100vw;height:100vh;overflow:hidden;}
+  .slide{
+    position:absolute;inset:0;
+    display:grid;place-items:center;
+    padding:clamp(70px, 7vh, 96px) clamp(40px, 6vw, 100px) clamp(70px, 7vh, 96px);
+    opacity:0; visibility:hidden;
+    transition: opacity .55s cubic-bezier(.4,0,.2,1), transform .65s cubic-bezier(.4,0,.2,1), filter .55s ease;
+    transform: translateX(60px) scale(.985);
+    filter: blur(6px);
+    pointer-events:none;
+  }
+  .slide.active{
+    opacity:1;visibility:visible;
+    transform:translateX(0) scale(1);
+    filter:blur(0);
+    pointer-events:auto;
+  }
+  .slide.prev{transform:translateX(-60px) scale(.985);}
+  .slide-inner{
+    width:min(1500px, 100%);
+    max-height:100%;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;
+    gap:clamp(18px, 2vw, 28px);
+    position:relative;
+  }
+
+  /* === HUD === */
+  .hud{
+    position:fixed;inset:0;pointer-events:none;z-index:50;
+    padding:clamp(20px, 2.5vw, 36px);
+    display:grid; grid-template-rows:auto 1fr auto;
+  }
+  .hud-top{
+    display:flex;justify-content:space-between;align-items:center;
+    font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--ink-dim);
+  }
+  .hud-top .tag{display:flex;gap:18px;align-items:center;}
+  .hud-top .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);animation:pulse 2.4s ease-in-out infinite;}
+  @keyframes pulse{50%{opacity:.4;transform:scale(.85);}}
+  .hud-bottom{
+    display:flex;justify-content:space-between;align-items:end;gap:16px;
+    font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-dim);
+  }
+  .hud-bottom .hint{opacity:.5;}
+  .counter{
+    font-variant-numeric:tabular-nums;pointer-events:auto;
+    display:inline-flex;align-items:baseline;gap:4px;
+    padding:9px 16px;border:1px solid var(--line);
+    background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border-radius:999px;
+  }
+  .counter .cur{color:var(--ink);font-weight:600;font-size:13px;}
+  .counter .sep{color:var(--ink-faint);}
+  .counter .total{color:var(--ink-dim);}
+
+  .progress{position:fixed;top:0;left:0;right:0;height:2px;z-index:60;background:rgba(232,230,225,.06);}
+  .progress-fill{
+    height:100%;background:linear-gradient(90deg, var(--accent), var(--accent-2));
+    transform-origin:left;transition:transform .55s cubic-bezier(.4,0,.2,1);
+    box-shadow:0 0 12px var(--accent);
+  }
+
+  .nav-btn{
+    position:fixed;top:50%;transform:translateY(-50%);
+    width:46px;height:46px;border-radius:50%;
+    background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border:1px solid var(--line);color:var(--ink-dim);
+    display:grid;place-items:center;cursor:pointer;z-index:55;
+    transition:all .25s ease;pointer-events:auto;
+  }
+  .nav-btn:hover{color:var(--ink);border-color:rgba(232,230,225,.25);transform:translateY(-50%) scale(1.06);}
+  .nav-btn.prev{left:22px;}
+  .nav-btn.next{right:22px;}
+  .nav-btn svg{width:18px;height:18px;}
+
+  /* === Ambient thermometer corner motif === */
+  .thermo{
+    position:fixed;left:clamp(24px, 3vw, 44px);bottom:clamp(56px, 6vh, 80px);
+    width:60px;height:160px;pointer-events:none;z-index:40;opacity:.55;
+    transition:opacity .4s;
+  }
+  .thermo svg{width:100%;height:100%;overflow:visible;}
+  .thermo .stem{stroke:var(--line);stroke-width:1;fill:none;}
+  .thermo .fill{stroke:var(--accent);stroke-width:3;stroke-linecap:round;fill:none;
+    stroke-dasharray:120;stroke-dashoffset:120;
+    animation: thermoFill 4s cubic-bezier(.5,0,.5,1) infinite alternate;
+  }
+  .thermo .bulb{fill:var(--accent);filter:drop-shadow(0 0 8px var(--accent));animation: bulbPulse 4s ease-in-out infinite alternate;}
+  .thermo .tick{stroke:var(--ink-faint);stroke-width:1;}
+  .thermo .tlabel{font-family:var(--mono);font-size:8px;fill:var(--ink-faint);letter-spacing:.1em;}
+  @keyframes thermoFill{
+    0%{stroke-dashoffset:120;}
+    100%{stroke-dashoffset:30;}
+  }
+  @keyframes bulbPulse{
+    0%{opacity:.7;}100%{opacity:1;filter:drop-shadow(0 0 14px var(--accent));}
+  }
+  body.no-thermo .thermo{opacity:0;}
+
+  /* === UNIFIED TYPOGRAPHY === */
+
+  .label{
+    font-family:var(--mono);font-size:13px;letter-spacing:.24em;text-transform:uppercase;
+    color:var(--accent);
+    display:inline-flex;align-items:center;gap:14px;
+  }
+  .label::before{content:"";width:28px;height:1px;background:var(--accent);}
+  .label.cool{color:var(--accent-cool);}
+  .label.cool::before{background:var(--accent-cool);}
+  .label.warm{color:var(--accent-warm);}
+  .label.warm::before{background:var(--accent-warm);}
+
+  h1.display{
+    font-family:var(--serif);font-weight:400;
+    font-size:clamp(52px, 8vw, 128px);
+    line-height:.96;letter-spacing:-.028em;
+    font-variation-settings:"opsz" 144;
+  }
+  h1.display em{font-style:italic;color:var(--accent-2);font-weight:300;}
+
+  h2.title{
+    font-family:var(--serif);font-weight:400;
+    font-size:clamp(44px, 6vw, 88px);
+    line-height:1.02;letter-spacing:-.022em;
+    font-variation-settings:"opsz" 144;
+    max-width:18ch;
+  }
+  h2.title.wide{max-width:22ch;}
+  h2.title em{font-style:italic;color:var(--accent-2);}
+  h2.title .hot{color:var(--accent);}
+  h2.title .cool{color:var(--accent-cool);}
+
+  p.lede{
+    font-family:var(--serif);font-weight:300;
+    font-size:clamp(22px, 2.4vw, 32px);line-height:1.4;
+    color:var(--ink-dim);max-width:24ch;
+    font-variation-settings:"opsz" 60;
+  }
+  p.lede.wide{max-width:34ch;}
+
+  p.body{
+    font-size:clamp(17px, 1.4vw, 21px);line-height:1.6;
+    color:var(--ink-dim);max-width:38ch;
+  }
+  p.body.wide{max-width:54ch;}
+  p.body strong{color:var(--ink);font-weight:500;}
+  p.body em{color:var(--ink);font-style:italic;}
+
+  /* === Slide 1: Title === */
+  .s-title .meta{
+    margin-top:32px;display:flex;gap:clamp(40px, 6vw, 100px);justify-content:center;
+    font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--ink-faint);flex-wrap:wrap;
+  }
+  .s-title .meta div{text-align:center;}
+  .s-title .meta div span{
+    display:block;color:var(--ink);font-family:var(--sans);font-size:15px;
+    letter-spacing:0;text-transform:none;margin-top:8px;font-weight:500;
+  }
+
+  /* === Stat trio === */
+  .stat-row{
+    display:grid;grid-template-columns:repeat(3, 1fr);
+    gap:clamp(32px, 4vw, 64px);
+    width:100%;max-width:1200px;margin-top:24px;
+  }
+  .stat-row.two{grid-template-columns:repeat(2, 1fr);max-width:900px;}
+  @media (max-width:900px){.stat-row,.stat-row.two{grid-template-columns:1fr;}}
+  .stat{text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px;}
+  .stat .num{
+    font-family:var(--serif);font-weight:400;
+    font-size:clamp(56px, 7vw, 96px);line-height:1;
+    color:var(--ink);letter-spacing:-.025em;
+    font-variation-settings:"opsz" 144;
+  }
+  .stat .num.accent{color:var(--accent-2);}
+  .stat .num.hot{color:var(--accent);}
+  .stat .num .unit{font-size:.38em;color:var(--ink-dim);margin-left:6px;font-style:italic;}
+  .stat .lbl{
+    font-family:var(--mono);font-size:11px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--accent);
+  }
+  .stat .desc{font-size:15px;color:var(--ink-dim);line-height:1.5;max-width:30ch;}
+
+  /* === Two-card row with label-on-top === */
+  .card-row{
+    display:grid;grid-template-columns:repeat(2,1fr);gap:clamp(24px, 3vw, 48px);
+    width:100%;max-width:1100px;margin-top:24px;
+  }
+  @media (max-width:900px){.card-row{grid-template-columns:1fr;}}
+  .card{
+    text-align:left;
+    border:1px solid var(--line);
+    padding:clamp(24px, 2.4vw, 36px);
+    border-radius:2px;
+    background:linear-gradient(180deg, rgba(255,255,255,.015), rgba(255,255,255,0));
+    display:flex;flex-direction:column;gap:16px;
+    position:relative;
+    border-top:2px solid var(--accent);
+  }
+  .card.cool{border-top-color:var(--accent-cool);}
+  .card.warm{border-top-color:var(--accent-warm);}
+  .card .card-label{
+    font-family:var(--mono);font-size:11px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--accent);
+  }
+  .card.cool .card-label{color:var(--accent-cool);}
+  .card.warm .card-label{color:var(--accent-warm);}
+  .card .card-title{
+    font-family:var(--serif);font-weight:400;font-size:clamp(22px, 2vw, 28px);
+    line-height:1.2;color:var(--ink);letter-spacing:-.01em;
+  }
+  .card .card-title em{font-style:italic;color:var(--accent-2);}
+  .card p{font-size:clamp(15px, 1.15vw, 17px);line-height:1.55;color:var(--ink-dim);}
+  .card p strong{color:var(--ink);font-weight:500;}
+  .card p em{color:var(--ink);font-style:italic;}
+
+  /* === Equation block === */
+  .equation{
+    font-family:var(--serif);font-style:italic;
+    font-size:clamp(28px, 3.4vw, 44px);line-height:1.4;
+    color:var(--ink);
+    padding:clamp(28px, 3vw, 48px);
+    border-left:3px solid var(--accent);
+    background:rgba(255,107,53,.04);
+    margin:8px auto;text-align:left;
+    max-width:900px;width:100%;
+  }
+  .equation sub{font-size:.6em;font-style:normal;color:var(--ink-dim);}
+
+  /* === Pullquote === */
+  .pullquote{
+    font-family:var(--serif);font-style:italic;font-weight:300;
+    font-size:clamp(32px, 4vw, 56px);line-height:1.25;
+    color:var(--ink);max-width:26ch;
+    font-variation-settings:"opsz" 144;
+    position:relative;text-align:center;
+  }
+  .pullquote .hot{color:var(--accent);}
+  .pullquote cite{
+    display:block;margin-top:32px;font-family:var(--mono);font-style:normal;
+    font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-faint);
+  }
+
+  /* === Numbered list === */
+  ol.numbered{
+    list-style:none;text-align:left;
+    max-width:900px;width:100%;display:flex;flex-direction:column;
+  }
+  ol.numbered li{
+    padding:24px 0;border-top:1px solid var(--line);
+    display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:start;
+  }
+  ol.numbered li:last-child{border-bottom:1px solid var(--line);}
+  ol.numbered .n{
+    font-family:var(--mono);font-size:14px;color:var(--accent);
+    letter-spacing:.15em;padding-top:4px;
+  }
+  ol.numbered .t{
+    font-size:clamp(18px, 1.5vw, 22px);line-height:1.55;color:var(--ink);
+  }
+  ol.numbered .t strong{font-weight:500;}
+  ol.numbered .t .sub{
+    display:block;margin-top:10px;color:var(--ink-dim);
+    font-size:clamp(15px, 1.15vw, 17px);font-style:italic;
+  }
+
+  /* === Data rows === */
+  .data-block{max-width:900px;width:100%;text-align:left;}
+  .data-row{
+    display:grid;grid-template-columns:1fr auto;gap:24px;
+    padding:18px 0;border-bottom:1px dashed var(--line);
+    align-items:baseline;
+  }
+  .data-row:last-child{border-bottom:none;}
+  .data-row .k{font-size:clamp(16px, 1.25vw, 19px);color:var(--ink-dim);}
+  .data-row .v{font-family:var(--mono);font-size:clamp(17px, 1.35vw, 21px);color:var(--ink);font-weight:500;font-variant-numeric:tabular-nums;}
+  .data-row .v.neg{color:var(--accent-warm);}
+  .data-row .v.pos{color:var(--accent-2);}
+
+  /* === Bar chart === */
+  .bar-chart{
+    display:flex;align-items:flex-end;gap:clamp(32px, 5vw, 80px);
+    height:clamp(280px, 38vh, 380px);
+    width:100%;max-width:900px;margin:0 auto;
+    padding:32px 20px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .bar-chart .col{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:18px;
+    height:100%;justify-content:flex-end;
+  }
+  .bar-chart .bar{
+    width:100%;position:relative;
+    transform-origin:bottom;
+    animation: growBar 1.4s cubic-bezier(.2,.7,.2,1) both;
+    animation-delay:.3s;
+  }
+  @keyframes growBar{
+    from{transform:scaleY(0);opacity:0;}
+    to{transform:scaleY(1);opacity:1;}
+  }
+  .bar-chart .bar .val{
+    position:absolute;top:-36px;left:50%;transform:translateX(-50%);
+    font-family:var(--mono);font-size:clamp(15px, 1.25vw, 19px);font-weight:600;
+    white-space:nowrap;font-variant-numeric:tabular-nums;
+  }
+  .bar-chart .lab{
+    font-family:var(--mono);font-size:11px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--ink-dim);text-align:center;
+  }
+  .bar-chart .lab .sub{display:block;color:var(--ink-faint);margin-top:4px;text-transform:none;letter-spacing:.05em;}
+
+  /* === Level vs growth compare chart === */
+  .compare-chart{
+    width:100%;max-width:1000px;
+    display:grid;grid-template-columns:1fr 1fr;gap:48px;
+    margin-top:8px;
+  }
+  @media (max-width:900px){.compare-chart{grid-template-columns:1fr;}}
+  .compare-chart .panel{text-align:left;}
+  .compare-chart svg{width:100%;height:auto;display:block;margin-top:16px;}
+  .compare-chart .panel-title{
+    font-family:var(--mono);font-size:12px;letter-spacing:.22em;
+    text-transform:uppercase;margin-bottom:10px;
+  }
+  .compare-chart .panel.cool .panel-title{color:var(--accent-cool);}
+  .compare-chart .panel.warm .panel-title{color:var(--accent-warm);}
+  .compare-chart .panel-desc{
+    font-family:var(--serif);font-style:italic;font-size:clamp(18px, 1.6vw, 22px);
+    color:var(--ink);line-height:1.3;
+  }
+  .compare-chart .panel-note{
+    font-size:14px;color:var(--ink-dim);margin-top:14px;line-height:1.5;
+  }
+
+  /* === Channel cards === */
+  .channels{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:24px;
+    width:100%;max-width:1200px;margin-top:16px;
+  }
+  @media (max-width:900px){.channels{grid-template-columns:1fr;}}
+  .channel{
+    text-align:center;
+    border:1px solid var(--line);padding:clamp(24px, 2.4vw, 36px);
+    border-radius:2px;background:rgba(255,255,255,.015);
+    display:flex;flex-direction:column;align-items:center;gap:14px;
+    border-top:2px solid var(--accent);
+  }
+  .channel .ch-icon{
+    width:56px;height:56px;border:1.5px solid var(--accent);border-radius:50%;
+    display:grid;place-items:center;
+    font-family:var(--serif);font-style:italic;color:var(--accent);
+    font-size:28px;font-weight:500;
+    background:radial-gradient(circle, rgba(255,107,53,.12), transparent 70%);
+  }
+  .channel h4{
+    font-family:var(--serif);font-weight:500;font-size:clamp(22px, 2vw, 28px);
+    color:var(--ink);letter-spacing:-.01em;
+  }
+  .channel .ch-stat{
+    font-family:var(--mono);font-size:clamp(18px, 1.6vw, 24px);
+    color:var(--accent-2);letter-spacing:.04em;font-weight:600;
+  }
+  .channel p{font-size:clamp(14px, 1.1vw, 16px);line-height:1.55;color:var(--ink-dim);}
+
+  /* === Verdict items: label ABOVE paragraph, full width === */
+  .verdict{
+    display:flex;flex-direction:column;gap:14px;
+    max-width:920px;width:100%;
+  }
+  .verdict-item{
+    text-align:left;padding:16px 22px;
+    border-left:3px solid var(--accent-2);background:rgba(255,180,73,.04);
+  }
+  .verdict-item.cool{border-color:var(--accent-cool);background:rgba(95,181,214,.04);}
+  .verdict-item.warm{border-color:var(--accent-warm);background:rgba(232,93,74,.04);}
+  .verdict-item .v-label{
+    font-family:var(--mono);font-size:11px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--accent-2);margin-bottom:6px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .verdict-item.cool .v-label{color:var(--accent-cool);}
+  .verdict-item.warm .v-label{color:var(--accent-warm);}
+  .verdict-item p{
+    font-size:clamp(15px, 1.15vw, 17px);line-height:1.5;color:var(--ink);
+  }
+  .verdict-item p strong{font-weight:500;}
+  .verdict-item p em{font-style:italic;color:var(--accent-2);}
+
+  /* === Scatter for slide 2 === */
+  .scatter-wrap{width:100%;max-width:1100px;margin:0 auto;}
+  .scatter-wrap svg{width:100%;height:auto;display:block;}
+  .chart-axis-label{
+    font-family:var(--mono);font-size:11px;letter-spacing:.16em;
+    text-transform:uppercase;fill:var(--ink-dim);
+  }
+
+  /* End mark */
+  .end-mark{
+    font-family:var(--serif);font-style:italic;font-size:clamp(80px, 14vw, 200px);
+    color:var(--accent);line-height:1;
+    font-variation-settings:"opsz" 144;
+  }
+
+  /* Stagger animation */
+  .slide.active .stagger > *{
+    animation: fadeUp .7s cubic-bezier(.2,.7,.2,1) both;
+  }
+  .slide.active .stagger > *:nth-child(1){animation-delay:.05s;}
+  .slide.active .stagger > *:nth-child(2){animation-delay:.15s;}
+  .slide.active .stagger > *:nth-child(3){animation-delay:.25s;}
+  .slide.active .stagger > *:nth-child(4){animation-delay:.35s;}
+  .slide.active .stagger > *:nth-child(5){animation-delay:.45s;}
+  .slide.active .stagger > *:nth-child(6){animation-delay:.55s;}
+  .slide.active .stagger > *:nth-child(7){animation-delay:.65s;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+
+  /* SVG line-draw */
+  .draw-line{
+    stroke-dasharray:1000;stroke-dashoffset:1000;
+    animation: drawLine 2.2s cubic-bezier(.4,0,.2,1) forwards;
+    animation-delay:.5s;
+  }
+  @keyframes drawLine{to{stroke-dashoffset:0;}}
+
+  .fade-point{
+    opacity:0;animation: fadeInPt .5s ease forwards;
+  }
+  @keyframes fadeInPt{to{opacity:.9;}}
+
+  @media (max-width:640px){
+    .nav-btn{display:none;}
+    .thermo{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+
+<button class="nav-btn prev" id="prevBtn" aria-label="Previous slide">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+</button>
+<button class="nav-btn next" id="nextBtn" aria-label="Next slide">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+</button>
+
+<!-- Ambient thermometer motif -->
+<div class="thermo" aria-hidden="true">
+  <svg viewBox="0 0 60 160">
+    <line class="tick" x1="18" y1="20" x2="24" y2="20"/>
+    <line class="tick" x1="18" y1="45" x2="24" y2="45"/>
+    <line class="tick" x1="18" y1="70" x2="24" y2="70"/>
+    <line class="tick" x1="18" y1="95" x2="24" y2="95"/>
+    <line class="tick" x1="18" y1="120" x2="24" y2="120"/>
+    <text class="tlabel" x="30" y="23">+2°</text>
+    <text class="tlabel" x="30" y="73">0°</text>
+    <text class="tlabel" x="30" y="123">-2°</text>
+    <rect class="stem" x="10" y="15" width="8" height="120" rx="4"/>
+    <line class="fill" x1="14" y1="135" x2="14" y2="20"/>
+    <circle class="bulb" cx="14" cy="142" r="10"/>
+  </svg>
+</div>
+
+<div class="hud">
+  <div class="hud-top">
+    <div class="tag"><span class="dot"></span><span>Empirical Macroeconomics · Referee Presentation</span></div>
+    <div class="tag"><span>Group 7</span></div>
+  </div>
+  <div></div>
+  <div class="hud-bottom">
+    <div class="hint">← → arrows · swipe · click edges</div>
+    <div class="counter">
+      <span class="cur" id="curNum">01</span>
+      <span class="sep">/</span>
+      <span class="total" id="totalNum">18</span>
+    </div>
+  </div>
+</div>
+
+<div class="deck" id="deck">
+
+  <!-- 1: TITLE -->
+  <section class="slide active s-title" data-slide="1" data-no-thermo>
+    <div class="slide-inner">
+      <div class="stagger" style="display:flex;flex-direction:column;align-items:center;gap:32px;">
+        <span class="label">Referee Presentation · DJO 2012</span>
+        <h1 class="display">Temperature<br/>shocks <em>and</em><br/>economic growth.</h1>
+        <p class="lede wide" style="margin-top:8px;">Evidence from 125 countries and half a century — and what it tells us about the price of a warming world.</p>
+        <div class="meta">
+          <div>Paper<span>Dell, Jones &amp; Olken (2012)</span></div>
+          <div>Presented by<span>Amelie Hucko · Kristers Grobins</span></div>
+          <div>Group<span>Group 7</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2: THE PUZZLE -->
+  <section class="slide" data-slide="2">
+    <div class="slide-inner">
+      <div class="stagger" style="display:flex;flex-direction:column;align-items:center;gap:28px;width:100%;">
+        <span class="label">01 · The puzzle</span>
+        <h2 class="title wide">Hot countries are <em>poor</em>. But <span class="hot">why?</span></h2>
+        <p class="lede wide">A 1°C increase in average temperature is associated with an 8.5% lower per-capita income across countries.</p>
+        <div class="scatter-wrap" style="max-width:1000px;">
+          <svg viewBox="0 0 1000 320" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="trendGrad" x1="0" x2="1">
+                <stop offset="0" stop-color="#ff6b35"/>
+                <stop offset="1" stop-color="#5fb5d6"/>
+              </linearGradient>
+            </defs>
+            <line x1="80" y1="280" x2="950" y2="280" stroke="rgba(232,230,225,.18)" stroke-width="1"/>
+            <line x1="80" y1="30" x2="80" y2="280" stroke="rgba(232,230,225,.18)" stroke-width="1"/>
+            <text x="515" y="312" class="chart-axis-label" text-anchor="middle">log GDP per capita →</text>
+            <text x="60" y="25" class="chart-axis-label" text-anchor="middle">↑ °C</text>
+            <g>
+              <circle class="fade-point" style="animation-delay:.5s" cx="160" cy="70" r="5" fill="#ff6b35"/>
+              <circle class="fade-point" style="animation-delay:.55s" cx="195" cy="95" r="5" fill="#ff6b35"/>
+              <circle class="fade-point" style="animation-delay:.6s" cx="175" cy="115" r="5" fill="#ff6b35"/>
+              <circle class="fade-point" style="animation-delay:.65s" cx="225" cy="105" r="5" fill="#ff6b35"/>
+              <circle class="fade-point" style="animation-delay:.7s" cx="255" cy="130" r="5" fill="#ff6b35"/>
+              <circle class="fade-point" style="animation-delay:.75s" cx="220" cy="140" r="5" fill="#ff6b35"/>
+              <circle class="fade-point" style="animation-delay:.8s" cx="290" cy="145" r="5" fill="#ff8a5c"/>
+              <circle class="fade-point" style="animation-delay:.85s" cx="325" cy="160" r="5" fill="#ff8a5c"/>
+              <circle class="fade-point" style="animation-delay:.9s" cx="365" cy="170" r="5" fill="#ff8a5c"/>
+              <circle class="fade-point" style="animation-delay:.95s" cx="395" cy="180" r="5" fill="#ff8a5c"/>
+              <circle class="fade-point" style="animation-delay:1.0s" cx="430" cy="185" r="5" fill="#ffb449"/>
+              <circle class="fade-point" style="animation-delay:1.05s" cx="465" cy="175" r="5" fill="#ffb449"/>
+              <circle class="fade-point" style="animation-delay:1.1s" cx="500" cy="200" r="5" fill="#ffb449"/>
+              <circle class="fade-point" style="animation-delay:1.15s" cx="540" cy="205" r="5" fill="#ffb449"/>
+              <circle class="fade-point" style="animation-delay:1.2s" cx="580" cy="200" r="5" fill="#e8b87a"/>
+              <circle class="fade-point" style="animation-delay:1.25s" cx="625" cy="215" r="5" fill="#e8b87a"/>
+              <circle class="fade-point" style="animation-delay:1.3s" cx="665" cy="220" r="5" fill="#a8c4d6"/>
+              <circle class="fade-point" style="animation-delay:1.35s" cx="710" cy="235" r="5" fill="#a8c4d6"/>
+              <circle class="fade-point" style="animation-delay:1.4s" cx="755" cy="240" r="5" fill="#5fb5d6"/>
+              <circle class="fade-point" style="animation-delay:1.45s" cx="800" cy="250" r="5" fill="#5fb5d6"/>
+              <circle class="fade-point" style="animation-delay:1.5s" cx="840" cy="245" r="5" fill="#5fb5d6"/>
+              <circle class="fade-point" style="animation-delay:1.55s" cx="885" cy="260" r="5" fill="#5fb5d6"/>
+              <circle class="fade-point" style="animation-delay:1.6s" cx="920" cy="265" r="5" fill="#5fb5d6"/>
+            </g>
+            <line class="draw-line" x1="100" y1="80" x2="935" y2="270" stroke="url(#trendGrad)" stroke-width="2.5"/>
+            <text x="200" y="50" class="chart-axis-label" text-anchor="start" fill="#ff6b35" font-size="13">hot &amp; poor</text>
+            <text x="900" y="235" class="chart-axis-label" text-anchor="end" fill="#5fb5d6" font-size="13">cold &amp; rich</text>
+            <text x="720" y="160" font-family="JetBrains Mono" font-size="14" font-weight="600" fill="#ffb449">−8.5% / °C</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3: TWO OLD APPROACHES -->
+  <section class="slide" data-slide="3">
+    <div class="slide-inner">
+      <div class="stagger" style="display:flex;flex-direction:column;align-items:center;gap:28px;width:100%;">
+        <span class="label">02 · What's been tried</span>
+        <h2 class="title">Two old approaches — <em>neither</em> works.</h2>
+        <div class="card-row">
+          <div class="card">
+            <span class="card-label">Approach 01 · Cross-section</span>
+            <div class="card-title">Compare hot countries to cold countries.</div>
+            <p><strong>The problem:</strong> Temperature is correlated with everything — institutions, disease, colonial history. Acemoglu, Johnson &amp; Robinson (2002) argue the relationship is spurious.</p>
+          </div>
+          <div class="card cool">
+            <span class="card-label">Approach 02 · Integrated Assessment</span>
+            <div class="card-title">Add up sector-by-sector damages.</div>
+            <p><strong>The problem:</strong> Requires modelling every channel — agriculture, mortality, conflict. Stern (2007) calls the simplifications <em>"drastic, often heroic."</em></p>
+          </div>
+        </div>
+        <p class="body wide" style="margin-top:16px;color:var(--ink);">
+          <strong>DJO's move:</strong> a third approach — within-country year-to-year variation, letting each country serve as its own control.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4: STRATEGY -->
+  <section class="slide" data-slide="4">
+    <div class="slide-inner">
+      <div class="stagger" style="display:flex;flex-direction:column;align-items:center;gap:28px;width:100%;">
+        <span class="label">03 · The strategy</span>
+        <h2 class="title">A country as <em>its own control</em>.</h2>
+        <p class="lede wide">Country fixed effects absorb anything time-invariant. Region-by-year effects sweep out common shocks. What remains: the local, idiosyncratic temperature shock.</p>
+        <div class="stat-row">
+          <div class="stat">
+            <div class="num">125<span class="unit">countries</span></div>
+            <div class="lbl">Panel coverage</div>
+            <div class="desc">All countries with ≥20 years of WDI GDP data.</div>
+          </div>
+          <div class="stat">
+            <div class="num">54<span class="unit">years</span></div>
+            <div class="lbl">Time span</div>
+            <div class="desc">1950 – 2003. Gridded temperature at 0.5° × 0.5°, population-weighted.</div>
+          </div>
+          <div class="stat">
+            <div class="num accent">2.2°<span class="unit">C</span></div>
+            <div class="lbl">Within-country range</div>
+            <div class="desc">More than twice the global warming since 1950.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5: LEVEL vs GROWTH -->
+  <section class="slide" data-slide="5">
+    <div class="slide-inner">
+      <div class="stagger" style="display:flex;flex-direction:column;align-items:center;gap:24px;width:100%;">
+        <span class="label">04 · The conceptual key</span>
+        <h2 class="title">Level effect, or <em>growth</em> effect?</h2>
+        <p class="lede wide">A simple framework — but the distinction matters enormously for the future.</p>
+        <div class="compare-chart">
+          <div class="panel cool">
+            <div class="panel-title">↻ Level effect · temporary</div>
+            <div class="panel-desc">Output drops, then bounces back.</div>
+            <svg viewBox="0 0 360 140">
+              <line x1="20" y1="80" x2="340" y2="80" stroke="rgba(232,230,225,.15)" stroke-width="1" stroke-dasharray="3,4"/>
+              <path class="draw-line" d="M 20 80 L 80 80 C 100 80, 110 130, 140 130 C 170 130, 180 80, 220 80 L 340 80"
+                fill="none" stroke="#5fb5d6" stroke-width="2.5"/>
+              <line x1="80" y1="80" x2="80" y2="40" stroke="rgba(255,107,53,.5)" stroke-width="1" stroke-dasharray="2,3"/>
+              <text x="80" y="32" font-family="JetBrains Mono" font-size="10" fill="#ff6b35" text-anchor="middle">shock</text>
+              <text x="20" y="100" font-family="JetBrains Mono" font-size="9" fill="#a8a59e">output</text>
+              <text x="340" y="100" font-family="JetBrains Mono" font-size="9" fill="#a8a59e" text-anchor="end">time →</text>
+            </svg>
+            <div class="panel-note">Lag coefficients reverse — they sum to zero.</div>
+          </div>
+          <div class="panel warm">
+            <div class="panel-title">↘ Growth effect · permanent</div>
+            <div class="panel-desc">Output drops — and stays down.</div>
+            <svg viewBox="0 0 360 140">
+              <line x1="20" y1="80" x2="340" y2="80" stroke="rgba(232,230,225,.15)" stroke-width="1" stroke-dasharray="3,4"/>
+              <path class="draw-line" d="M 20 80 L 80 80 C 100 80, 110 100, 140 110 C 200 122, 270 125, 340 125"
+                fill="none" stroke="#e85d4a" stroke-width="2.5"/>
+              <line x1="80" y1="80" x2="80" y2="40" stroke="rgba(255,107,53,.5)" stroke-width="1" stroke-dasharray="2,3"/>
+              <text x="80" y="32" font-family="JetBrains Mono" font-size="10" fill="#ff6b35" text-anchor="middle">shock</text>
+              <text x="20" y="100" font-family="JetBrains Mono" font-size="9" fill="#a8a59e">output</text>
+              <text x="340" y="100" font-family="JetBrains Mono" font-size="9" fill="#a8a59e" text-anchor="end">time →</text>
+            </svg>
+            <div class="panel-note">Lag coefficients persist — cumulated sum stays negative.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6: SPECIFICATION -->
+  <section class="slide" data-slide="6">
+    <div class="slide-inner">
+      <div class="stagger" style="display:flex;flex-direction:column;align-items:center;gap:28px;width:100%;">
+        <span class="label">05 · Specification</span>
+        <h2 class="title">The estimating equation.</h2>
+        <div class="equation">
+          g<sub>it</sub> = θ<sub>i</sub> + θ<sub>rt</sub> + Σ ρ<sub>j</sub> T<sub>it−j</sub> + ε<sub>it</sub>
+        </div>
+        <div class="card-row" style="margin-top:8px;">
+          <div class="card">
+            <span class="card-label">Fixed effects</span>
+            <p><strong>θ<sub>i</sub></strong> — country FE absorb institutions, geography, culture.</p>
+            <p><strong>θ<sub>rt</sub></strong> — region × year and poor × year FE sweep out common regional shocks.</p>
+          </div>
+          <div class="card cool">
+            <span class="card-label">Identification</span>
+            <p><strong>T<sub>it−j</sub></strong> — temperature with up to 10 lags, interacted with a poor-country dummy.</p>
+            <p><strong>ε<sub>it</sub></strong> — two-way clustered errors at country and region-year (Cameron et al. 2011).</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7: HEADLINE -->
+  <section class="slide" data-slide="7">
+    <div class="slide-inner">
+      <div class="stagger" style="display:flex;flex-direction:column;align-items:center;gap:24px;width:100%;">
+        <span class="label">06 · The headline · Table 2</span>
+        <h2 class="title wide">A 1°C shock costs a poor country <em>1.3 pp</em> of growth.</h2>
+        <div class="bar-chart">
+          <div class="col">
+            <div class="bar" style="height:18%;background:linear-gradient(180deg, rgba(95,181,214,.25), rgba(95,181,214,0));border-top:3px solid #5fb5d6;">
+              <span class="val" style="color:#5fb5d6;">+0.26 pp</span>
+            </div>
+            <div class="lab">Rich countries<span class="sub">not significant</span></div>
+          </div>
+          <div class="col">
+            <div class="bar" style="height:95%;background:linear-gradient(180deg, rgba(255,107,53,.32), rgba(255,107,53,0));border-top:3px solid #ff6b35;">
+              <span class="val" style="color:#ff6b35;">−1.39 pp***</span>
+            </div>
+            <div class="lab">Poor countries<span class="sub">significant at 1%</span></div>
+          </div>
+          <div class="col">
+            <div class="bar" style="height:48%;background:linear-gradient(180deg, rgba(255,180,73,.28), rgba(255,180,73,0));border-top:3px solid #ffb449;">
+              <span class="val" style="color:#ffb449;">−0.69 pp</span>
+            </div>
+            <div class="lab">Per 1 SD shock<span class="sub">≈ 0.5 °C</span></div>
+          </div>
+        </div>
+        <p class="lede wide" style="margin-top:8px;">The poor-rich split survives controlling for being naturally <em>hot</em> or naturally <em>agricultural</em>. Income itself is the operative characteristic.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8: LAGS -->
+  <section class="slide" data-slide="8">
+    <div class="slide-inner">
+      <div class="stagger" style="display:flex;flex-direction:column;align-items:center;gap:28px;width:100%;">
+        <span class="label">07 · The dynamics · Table 3</span>
+        <h2 class="title">It <em>doesn't</em> bounce back.</h2>
+        <p class="lede wide">If shocks were purely level effects, lag coefficients would reverse sign. They don't.</p>
+        <div class="data-block">
+          <div class="data-row"><span class="k">No lags · contemporaneous</span><span class="v neg">−1.39 pp ***</span></div>
+          <div class="data-row"><span class="k">1 lag · cumulative</span><span class="v neg">−1.10 pp ***</span></div>
+          <div class="data-row"><span class="k">5 lags · cumulative</span><span class="v neg">−1.04 pp **</span></div>
+          <div class="data-row"><span class="k">10 lags · cumulative</span><span class="v neg">−0.86 pp</span></div>
+        </div>
+        <p class="body wide" style="color:var(--ink);">
+          <strong>A 1 pp annual gap sustained for just 7 years</strong> generates the entire 8.5% cross-sectional income gap per °C.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9: CHANNELS -->
+  <section class="slide" data-slide="9">
+    <div class="slide-inner">
+      <div class="stagger" style="display:flex;flex-direction:column;align-items:center;gap:28px;width:100%;">
+        <span class="label">08 · Channels · Tables 5 &amp; 6</span>
+        <h2 class="title">It's <em>not</em> just agriculture.</h2>
+        <p class="lede wide">Temperature shocks cascade through poor economies in three distinct ways.</p>
+        <div class="channels">
+          <div class="channel">
+            <div class="ch-icon">A</div>
+            <h4>Agriculture</h4>
+            <div class="ch-stat">−2.67 pp / °C</div>
+            <p>Lower yields, shorter growing seasons. The expected channel.</p>
+          </div>
+          <div class="channel">
+            <div class="ch-icon">I</div>
+            <h4>Industry</h4>
+            <div class="ch-stat">−2.04 pp / °C</div>
+            <p>Labour productivity collapses in heat. Graff Zivin &amp; Neidell (2010) show 23% labour-supply drops above 38°C.</p>
+          </div>
+          <div class="channel">
+            <div class="ch-icon">P</div>
+            <h4>Politics</h4>
+            <div class="ch-stat">+4.4 pp coup risk</div>
+            <p>Hot years raise irregular-leader-transition probability by nearly its 4.5% baseline.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10: ROBUSTNESS -->
+  <section class="slide" data-slide="10">
+    <div class="slide-inner">
+      <div class="stagger" style="display:flex;flex-direction:column;align-items:center;gap:28px;width:100%;">
+        <span class="label">09 · Robustness · Table 4</span>
+        <h2 class="title">The result <em>survives</em> nearly everything.</h2>
+        <div class="data-block">
+          <div class="data-row"><span class="k">Country-specific time trends</span><span class="v neg">−1.72 pp ***</span></div>
+          <div class="data-row"><span class="k">Balanced sample 1971–2003</span><span class="v neg">−1.38 pp ***</span></div>
+          <div class="data-row"><span class="k">Penn World Tables data</span><span class="v neg">−0.86 pp ***</span></div>
+          <div class="data-row"><span class="k">Area-weighted climate data</span><span class="v neg">−0.89 pp **</span></div>
+          <div class="data-row"><span class="k">Sub-Saharan Africa only</span><span class="v neg">−1.88 pp ***</span></div>
+          <div class="data-row"><span class="k">Sub-Saharan Africa excluded</span><span class="v neg">−0.90 pp *</span></div>
+        </div>
+        <p class="body wide" style="color:var(--ink);">
+          <strong>Beyond the table:</strong> export data (Jones &amp; Olken 2010), weather-station selection tests, and lead-of-temperature placebos all confirm the result.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11: MEDIUM RUN -->
+  <section class="slide" data-slide="11">
+    <div class="slide-inner">
+      <div class="stagger" style="display:flex;flex-direction:column;align-items:center;gap:28px;width:100%;">
+        <span class="label">10 · Medium-run · Section IV</span>
+        <h2 class="title wide">Does adaptation <em>save</em> us?</h2>
+        <p class="lede wide">Comparing 1970–1985 to 1986–2000 — sustained 15-year shifts within each country.</p>
+        <div class="stat-row two">
+          <div class="stat">
+            <div class="num hot">−1.93<span class="unit">pp</span></div>
+            <div class="lbl">Medium-run, per °C · poor</div>
+            <div class="desc">Strikingly close to the annual panel estimate. If adaptation were strong, we'd expect attenuation.</div>
+          </div>
+          <div class="stat">
+            <div class="num hot">−2.26<span class="unit">pp ***</span></div>
+            <div class="lbl">Median regression · poor</div>
+            <div class="desc">More precise, more negative — outliers had been pulling OLS toward zero.</div>
+          </div>
+        </div>
+        <p class="body wide" style="color:var(--ink);">Adaptation does <em>not</em> appear to undo the damage on a 15-year horizon.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12: IMPLICATIONS -->
+  <section class="slide" data-slide="12">
+    <div class="slide-inner">
+      <div class="stagger" style="display:flex;flex-direction:column;align-items:center;gap:24px;width:100%;">
+        <span class="label">11 · Implications</span>
+        <h2 class="title">Three things IAMs get <em>wrong</em>.</h2>
+        <ol class="numbered">
+          <li>
+            <span class="n">01</span>
+            <span class="t"><strong>The rich-poor asymmetry is enormous.</strong> Damage functions calibrated on US or European data dramatically understate effects in low-income countries.<span class="sub">DJO's poor-country coefficient is roughly five times the rich-country one.</span></span>
+          </li>
+          <li>
+            <span class="n">02</span>
+            <span class="t"><strong>Channels go far beyond agriculture.</strong> Industrial output and political stability are first-order — and absent from most current IAMs.<span class="sub">The agricultural focus is a relic of older damage-function literatures.</span></span>
+          </li>
+          <li>
+            <span class="n">03</span>
+            <span class="t"><strong>Growth effects, not just level effects.</strong> If even modest growth effects compound, long-run damages are an order of magnitude larger.<span class="sub">This is the single most consequential finding for policy.</span></span>
+          </li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13: CRITIQUE 1 -->
+  <section class="slide" data-slide="13">
+    <div class="slide-inner">
+      <div class="stagger" style="display:flex;flex-direction:column;align-items:center;gap:28px;width:100%;">
+        <span class="label warm">12 · Critique · #1 · Where, not why</span>
+        <h2 class="title">The poor-rich split <em>bundles</em> too much.</h2>
+        <p class="lede wide">DJO tell us <strong style="color:var(--ink);">where</strong> temperature matters — but not <strong style="color:var(--accent-2);font-style:italic;">why</strong>.</p>
+        <div class="card-row">
+          <div class="card warm">
+            <span class="card-label">A thicket of correlations</span>
+            <p>Poor countries differ along dozens of dimensions: institutional quality, agricultural employment, capital intensity, technology access, urbanisation, healthcare capacity.</p>
+            <p>The coefficient could reflect <strong>any combination</strong> — and policy guidance depends crucially on which.</p>
+          </div>
+          <div class="card warm">
+            <span class="card-label">A static classification</span>
+            <p>A country classified <strong>poor in its first sample year</strong> stays poor for the entire panel. China in 1960 ≠ China in 2003.</p>
+            <p>As countries develop, the dummy grows stale — estimates become less reliable in later years.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 14: CRITIQUE 2 -->
+  <section class="slide" data-slide="14">
+    <div class="slide-inner">
+      <div class="stagger" style="display:flex;flex-direction:column;align-items:center;gap:28px;width:100%;">
+        <span class="label warm">13 · Critique · #2 · Core finding, soft evidence</span>
+        <h2 class="title">Level vs growth — <em>not</em> pinned down.</h2>
+        <p class="lede wide">The growth-effect interpretation is the paper's most consequential claim. The evidence is thinner than the prose suggests.</p>
+        <div class="data-block">
+          <div class="data-row"><span class="k">10-lag cumulative · no precipitation controls</span><span class="v neg">−1.17 pp *</span></div>
+          <div class="data-row"><span class="k">10-lag cumulative · with precipitation controls</span><span class="v" style="color:var(--ink-dim);">−0.86 pp (n.s.)</span></div>
+        </div>
+        <p class="body wide" style="color:var(--ink);">
+          <strong>Adding precipitation lags kills the significance.</strong> That fragility is uncomfortable — the difference between a level effect and a growth effect is the difference between a one-time hit and compounding damages over a century.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 15: CRITIQUE 3 -->
+  <section class="slide" data-slide="15">
+    <div class="slide-inner">
+      <div class="stagger" style="display:flex;flex-direction:column;align-items:center;gap:28px;width:100%;">
+        <span class="label warm">14 · Critique · #3 · Double-counting?</span>
+        <h2 class="title wide">Coups — channel, or <em>consequence?</em></h2>
+        <p class="lede wide">The +4.4 pp coup-probability finding is treated as an independent mechanism. The causality is genuinely ambiguous.</p>
+        <div class="card-row">
+          <div class="card warm">
+            <span class="card-label">DJO's reading</span>
+            <div class="card-title">Politics as <em>parallel</em> channel</div>
+            <p>Heat → political instability → impaired institutions → permanently lower growth. <strong>Alongside</strong> the agricultural and industrial effects.</p>
+          </div>
+          <div class="card cool">
+            <span class="card-label">Our reading</span>
+            <div class="card-title">Politics as <em>consequence</em></div>
+            <p>Heat → output collapse → falling incomes → unrest. Politics is <strong>downstream</strong> of the GDP result, already captured by it.</p>
+          </div>
+        </div>
+        <p class="body wide" style="color:var(--ink);">Without an instrument or further structural assumptions, the direction simply <em>isn't identified</em>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 16: VERDICT -->
+  <section class="slide" data-slide="16">
+    <div class="slide-inner" style="gap:18px;">
+      <div class="stagger" style="display:flex;flex-direction:column;align-items:center;gap:18px;width:100%;">
+        <span class="label">15 · Verdict</span>
+        <h2 class="title" style="font-size:clamp(36px, 4.8vw, 64px);">Our overall <em>assessment</em>.</h2>
+        <div class="verdict">
+          <div class="verdict-item">
+            <div class="v-label">★ Strong</div>
+            <p>The <strong>cleanest causal evidence available</strong> that temperature shocks reduce growth in poor countries. The within-country panel design is convincing and the result is robust across samples, data sources, and specifications.</p>
+          </div>
+          <div class="verdict-item">
+            <div class="v-label">★ Strong</div>
+            <p>The channel analysis <strong>decisively moves the debate beyond agriculture</strong>. Industrial output and political instability now have to be part of any serious damage model.</p>
+          </div>
+          <div class="verdict-item cool">
+            <div class="v-label">⚠ Caveat</div>
+            <p>The poor-rich classification is imprecise. The level-vs-growth distinction — central to long-run policy implications — is suggestive rather than decisive. The political channel may double-count.</p>
+          </div>
+          <div class="verdict-item">
+            <div class="v-label">→ Bottom line</div>
+            <p>A landmark contribution that reset the empirical climate-economy literature. The follow-up agenda is not <em>whether</em> heat matters for development — but <em>through which precise structural mechanisms</em>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 17: TAKEAWAY -->
+  <section class="slide" data-slide="17">
+    <div class="slide-inner">
+      <div class="stagger" style="display:flex;flex-direction:column;align-items:center;gap:36px;width:100%;">
+        <span class="label">One thing to remember</span>
+        <div class="pullquote">
+          A 1°C shock costs a poor country <span class="hot">1.3 percentage points</span> of growth.
+          <br/><br/>
+          Sustained for <em>seven years</em>, that closes the entire cross-sectional gap between hot and cold nations — and there is no evidence it will close itself.
+          <cite>— our reading of DJO 2012</cite>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 18: THANK YOU -->
+  <section class="slide s-title" data-slide="18" data-no-thermo>
+    <div class="slide-inner">
+      <div class="stagger" style="display:flex;flex-direction:column;align-items:center;gap:32px;">
+        <div class="end-mark">—</div>
+        <h2 class="title">Questions <em>welcome</em>.</h2>
+        <p class="lede">Amelie Hucko · Kristers Grobins · Group 7</p>
+        <div class="meta">
+          <div>Paper<span>DJO 2012 · AEJ Macro</span></div>
+          <div>Course<span>Empirical Macroeconomics</span></div>
+          <div>Year<span>2026</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function(){
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total = slides.length;
+  let cur = 0;
+  const curEl = document.getElementById('curNum');
+  const totalEl = document.getElementById('totalNum');
+  const fill = document.getElementById('progressFill');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+
+  totalEl.textContent = String(total).padStart(2,'0');
+  const pad = n => String(n).padStart(2,'0');
+
+  function updateThermoVisibility(idx){
+    const noThermo = slides[idx].hasAttribute('data-no-thermo');
+    document.body.classList.toggle('no-thermo', noThermo);
+  }
+
+  function go(n){
+    n = Math.max(0, Math.min(total-1, n));
+    if(n === cur) return;
+    slides[cur].classList.remove('active');
+    slides[cur].classList.add('prev');
+    slides.forEach((s,i)=>{ if(i !== n && i !== cur) s.classList.remove('prev'); });
+    cur = n;
+    slides[cur].classList.add('active');
+    slides[cur].classList.remove('prev');
+    curEl.textContent = pad(cur+1);
+    fill.style.transform = `scaleX(${(cur+1)/total})`;
+    updateThermoVisibility(cur);
+    history.replaceState(null, '', '#'+(cur+1));
+  }
+
+  const next = () => go(cur+1);
+  const prev = () => go(cur-1);
+
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' '){e.preventDefault(); next();}
+    else if(e.key === 'ArrowLeft' || e.key === 'PageUp'){e.preventDefault(); prev();}
+    else if(e.key === 'Home'){e.preventDefault(); go(0);}
+    else if(e.key === 'End'){e.preventDefault(); go(total-1);}
+    else if(/^[0-9]$/.test(e.key)){
+      const n = e.key === '0' ? 9 : parseInt(e.key,10)-1;
+      if(n < total) go(n);
+    }
+  });
+
+  nextBtn.addEventListener('click', next);
+  prevBtn.addEventListener('click', prev);
+
+  document.addEventListener('click', (e)=>{
+    if(e.target.closest('.nav-btn') || e.target.closest('.counter') || e.target.closest('a')) return;
+    const w = window.innerWidth;
+    if(e.clientX < w * 0.15) prev();
+    else if(e.clientX > w * 0.85) next();
+  });
+
+  let touchStartX=null, touchStartY=null, touchStartT=0;
+  document.addEventListener('touchstart', (e)=>{
+    if(e.touches.length !== 1) return;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    touchStartT = Date.now();
+  }, {passive:true});
+  document.addEventListener('touchend', (e)=>{
+    if(touchStartX === null) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touchStartX;
+    const dy = t.clientY - touchStartY;
+    const dt = Date.now() - touchStartT;
+    touchStartX = null;
+    if(Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5 && dt < 800){
+      if(dx < 0) next(); else prev();
+    }
+  }, {passive:true});
+
+  let wheelLock = false;
+  document.addEventListener('wheel', (e)=>{
+    if(wheelLock) return;
+    if(Math.abs(e.deltaX) > Math.abs(e.deltaY) && Math.abs(e.deltaX) > 30){
+      wheelLock = true;
+      if(e.deltaX > 0) next(); else prev();
+      setTimeout(()=>{wheelLock=false;}, 700);
+    }
+  }, {passive:true});
+
+  updateThermoVisibility(0);
+  const hashN = parseInt((location.hash || '').replace('#',''), 10);
+  if(!isNaN(hashN) && hashN >= 1 && hashN <= total){
+    setTimeout(()=>go(hashN-1), 50);
+  } else {
+    fill.style.transform = `scaleX(${1/total})`;
+  }
+})();
+</script>
+
+</body>
+</html>
